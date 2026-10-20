@@ -1,0 +1,5 @@
+from,to,distance_m,blocked
+J02,J03,,False
+N01,N07,,False
+N07,N08,,False
+N08,N02,,False
