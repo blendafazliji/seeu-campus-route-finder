@@ -16,4 +16,9 @@ J02,N06,20,False
 N09,N10,90,False
 N13,P02,80,False
 P01,N03,120,False
-N14,N15,2,False
+N14,N15,3,False
+P01,P02,110,False
+N13,N14,30,False
+P03,N12,140,False	
+J01,P01,40,False
+N13,N15,33,False
