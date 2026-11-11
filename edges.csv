@@ -1,8 +1,8 @@
 from,to,distance_m,blocked
-J01,N04,100,False
-N04,N03,60,False
-N03,N05,30,False
-N03,J02,10,False
+J01,N03,100,False
+N03,N04,60,False
+N04,N05,30,False
+N04,J02,10,False
 J02,N11,70,False
 N11,N01,20,False
 N01,N02,20,False
