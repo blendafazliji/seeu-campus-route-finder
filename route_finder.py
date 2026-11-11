@@ -1,69 +1,49 @@
-"""SEEU Campus Route Finder - loads nodes.csv and edges.csv and compares
-BFS, Dijkstra and A* (route, distance, walking time, nodes expanded)."""
+"""SEEU Campus Route Finder: compare BFS, Dijkstra, and A* on CSV campus data.
+
+A* uses a zero heuristic (equivalent to Dijkstra) because no geographic
+coordinates are stored. BFS minimizes hops, not distance.
+"""
 import csv
 import heapq
-import math
 from collections import deque
 
 NODES_FILE = "nodes.csv"
 EDGES_FILE = "edges.csv"
-
-# Meters per pixel on your screenshot. Measure one real distance in Google Maps,
-# measure the same distance in pixels on the screenshot, then divide.
-# Example: 100 m on the ground = 250 px on the screenshot -> 0.4
-METERS_PER_PIXEL = 0.25
-
-WALK_SPEED_M_PER_MIN = 80  # about 4.8 km/h
-
-START = "J01"  # Main entrance
-GOAL = "N05"   # 305
-
-
-def to_float(value):
-    value = (value or "").strip()
-    return float(value) if value else None
+WALK_SPEED_M_PER_MIN = 80
+START = "J01"
+GOAL = "N05"
 
 
 def to_bool(value):
     return (value or "").strip().lower() == "true"
 
 
-def pixel_to_meters(a, b, nodes):
-    """Straight-line distance in meters between two nodes, from their x,y."""
-    na, nb = nodes[a], nodes[b]
-    if None in (na["x"], na["y"], nb["x"], nb["y"]) or METERS_PER_PIXEL is None:
-        return None
-    return math.hypot(na["x"] - nb["x"], na["y"] - nb["y"]) * METERS_PER_PIXEL
-
-
 def load_graph():
     nodes = {}
     with open(NODES_FILE, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            nid = row["id"].strip()
-            if not nid:
-                print("Warning: a row in nodes.csv has no ID and was skipped.")
+            node_id = row["id"].strip()
+            if not node_id:
                 continue
-            nodes[nid] = {"name": row["name"].strip(), "x": to_float(row["x"]), "y": to_float(row["y"])}
+            nodes[node_id] = row["name"].strip()
 
-    graph = {nid: [] for nid in nodes}
+    graph = {node_id: [] for node_id in nodes}
     with open(EDGES_FILE, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             a, b = row["from"].strip(), row["to"].strip()
-            if not a and not b:
-                continue
             if a not in nodes or b not in nodes:
-                print(f"Warning: edge {a} - {b} uses an unknown node ID and was skipped.")
+                print(f"Warning: unknown node in edge {a} - {b}; skipped.")
                 continue
-            dist = to_float(row["distance_m"])
-            if dist is None:
-                dist = pixel_to_meters(a, b, nodes)
-            if dist is None:
-                raise ValueError(
-                    f"Edge {a} - {b} has no distance_m, and no x/y positions + METERS_PER_PIXEL to estimate it.")
+            try:
+                distance = float(row["distance_m"])
+            except (ValueError, TypeError):
+                print(f"Warning: missing/invalid distance for {a} - {b}; skipped.")
+                continue
+            if distance < 0:
+                raise ValueError(f"Negative distance for edge {a} - {b}")
             blocked = to_bool(row["blocked"])
-            graph[a].append((b, dist, blocked))
-            graph[b].append((a, dist, blocked))
+            graph[a].append((b, distance, blocked))
+            graph[b].append((a, distance, blocked))
     return nodes, graph
 
 
@@ -75,15 +55,15 @@ def rebuild(came_from, goal):
 
 
 def path_length(path, graph):
-    total = 0
-    for u, v in zip(path, path[1:]):
-        total += min(d for (n, d, blocked) in graph[u] if n == v and not blocked)
-    return total
+    return sum(
+        min(d for nxt, d, blocked in graph[a] if nxt == b and not blocked)
+        for a, b in zip(path, path[1:])
+    )
 
 
 def bfs(graph, start, goal):
-    """Plain BFS: fewest hops, ignores distance."""
-    queue, came_from, seen, expanded = deque([start]), {}, {start}, 0
+    queue = deque([start])
+    came_from, seen, expanded = {}, {start}, 0
     while queue:
         node = queue.popleft()
         expanded += 1
@@ -98,9 +78,9 @@ def bfs(graph, start, goal):
 
 
 def best_first(graph, start, goal, heuristic):
-    """Dijkstra when heuristic returns 0; A* otherwise."""
-    heap, counter = [(heuristic(start), 0, start)], 0
-    g, came_from, closed, expanded = {start: 0.0}, {}, set(), 0
+    heap = [(heuristic(start), 0, start)]
+    counter, g = 0, {start: 0.0}
+    came_from, closed, expanded = {}, set(), 0
     while heap:
         _, _, node = heapq.heappop(heap)
         if node in closed:
@@ -109,10 +89,10 @@ def best_first(graph, start, goal, heuristic):
         expanded += 1
         if node == goal:
             return rebuild(came_from, goal), expanded
-        for nxt, d, blocked in graph[node]:
-            if blocked:
+        for nxt, distance, blocked in graph[node]:
+            if blocked or nxt in closed:
                 continue
-            new_g = g[node] + d
+            new_g = g[node] + distance
             if new_g < g.get(nxt, float("inf")):
                 g[nxt] = new_g
                 came_from[nxt] = node
@@ -123,25 +103,23 @@ def best_first(graph, start, goal, heuristic):
 
 def main():
     nodes, graph = load_graph()
+    if START not in nodes or GOAL not in nodes:
+        raise ValueError("START or GOAL is not present in nodes.csv")
 
-    def zero(_):
-        return 0.0
-
-    def euclid_to_goal(n):
-        d = pixel_to_meters(n, GOAL, nodes)
-        return d if d is not None else 0.0  # falls back to Dijkstra if no positions
-
-    print(f"Route: {nodes[START]['name']}  ->  {nodes[GOAL]['name']}\n")
-    for label, fn in [("BFS", None), ("Dijkstra", zero), ("A*", euclid_to_goal)]:
-        path, expanded = bfs(graph, START, GOAL) if fn is None else best_first(graph, START, GOAL, fn)
+    print(f"Route: {nodes[START]} -> {nodes[GOAL]}\n")
+    for label in ("BFS", "Dijkstra", "A*"):
+        if label == "BFS":
+            path, expanded = bfs(graph, START, GOAL)
+        else:
+            path, expanded = best_first(graph, START, GOAL, lambda _: 0.0)
         if path is None:
             print(f"{label}: no route found (nodes expanded: {expanded})\n")
             continue
-        dist = path_length(path, graph)
-        print(f"{label}")
-        print("  Route:    " + " -> ".join(nodes[n]["name"] for n in path))
-        print(f"  Distance: {dist:.0f} m")
-        print(f"  Walking:  {dist / WALK_SPEED_M_PER_MIN:.1f} min")
+        distance = path_length(path, graph)
+        print(label)
+        print("  Route:    " + " -> ".join(nodes[node] for node in path))
+        print(f"  Distance: {distance:.0f} m")
+        print(f"  Walking:  {distance / WALK_SPEED_M_PER_MIN:.1f} min")
         print(f"  Nodes expanded: {expanded}\n")
 
 
