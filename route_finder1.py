@@ -12,14 +12,23 @@ for _, row in nodes.iterrows():
     G.add_node(row["id"], name=row["name"])
 
 for _, row in edges.iterrows():
-    if row["from"] not in ids or row["to"] not in ids:
-        print("Skipped edge with unknown ID:", row["from"], row["to"])
+    a, b = row["from"], row["to"]
+    if a not in ids or b not in ids:
+        print("Skipped edge with unknown ID:", a, b)
         continue
     if pd.isna(row["distance_m"]):
-        print("Skipped edge without distance:", row["from"], row["to"])
+        print("Skipped edge without distance:", a, b)
         continue
-    if str(row["blocked"]).strip().lower() != "true":
-        G.add_edge(row["from"], row["to"], weight=float(row["distance_m"]))
+    if float(row["distance_m"]) <= 0:
+        print("Skipped edge with zero or negative distance:", a, b)
+        continue
+    if str(row["blocked"]).strip().lower() == "true":
+        print("Skipped blocked edge:", a, b)
+        continue
+    if G.has_edge(a, b):
+        print("Skipped duplicate edge:", a, b, "(kept", G[a][b]["weight"], "m)")
+        continue
+    G.add_edge(a, b, weight=float(row["distance_m"]))
 
 
 def check_input(start, goal):
