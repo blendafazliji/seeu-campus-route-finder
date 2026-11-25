@@ -1,6 +1,6 @@
 from,to,distance_m,blocked
 J01,N03,100,False
-N03,N04,60,False
+N03,N04,60,True
 N04,N05,30,False
 N04,J02,10,False
 J02,N11,70,False
