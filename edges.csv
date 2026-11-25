@@ -13,7 +13,7 @@ N07,N08,30,False
 N07,N09,130,False
 N14,P03,70,False
 J02,N06,20,False
-N09,N10,0,False
+N09,N10,,False
 N13,P02,80,False
 P01,N03,120,False
 N14,N15,3,False
