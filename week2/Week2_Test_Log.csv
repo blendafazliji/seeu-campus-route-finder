@@ -1,0 +1,6 @@
+test_id,case,input,expected,actual,result,
+T01,Normal case,J01 -> N05 (clean data),"190 m, 2.4 min (100+60+30)","BFS: 190.0 m, 2.4 min",Pass,
+T02,Missing data,N09-N10 distance empty; J01 -> N10,Edge skipped with message; No route found.,Skipped edge without distance: N09 N10; No route found.,Pass,
+T03,Zero data,N09-N10 distance = 0; J01 -> N10,Edge skipped with message; No route found.,Skipped edge with zero or negative distance: N09 N10; No route found.,Pass,
+T04,Duplicate data,"Extra row J01,N03,50; J01 -> N05","Duplicate skipped, 100 m kept; 190 m, 2.4 min","Skipped duplicate edge: J01 N03 (kept 100.0 m); BFS: 190.0 m, 2.4 min",Pass,
+T05,Edge case: blocked path,N03-N04 blocked = True; J01 -> N05,Route avoids 815 -> 814,"BFS: 600.0 m, 7.5 min via Parking 1 ... Roundabout -> 814 -> 305 (checked by hand after the run)",Pass,
