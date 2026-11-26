@@ -1,0 +1,9 @@
+test_id,case,input,expected,actual,result
+T01,Normal: Main entrance -> 305,"run_all('J01','N05')","190 m, 2.4 min (100+60+30); BFS, Dijkstra and A* the same","BFS, Dijkstra and A*: 190.0 m, 2.4 min, same route",Pass
+T02,Normal: 305 -> LH4,"run_all('N05','N15')","BFS: 305 -> 814 -> 815 -> Parking 1 -> Parking 2 -> Rectorate -> LH4, 433 m, 5.4 min. Dijkstra/A*: 305 -> 814 -> Roundabout -> 303 -> 302 -> Parking 3 -> LH3 -> LH4, 343 m, 4.3 min","BFS: 305 -> 814 -> 815 -> Parking 1 -> Parking 2 -> Rectorate -> LH4, 433.0 m, 5.4 min. Dijkstra and A*: 305 -> 814 -> Roundabout -> 303 -> 302 -> ..., 343.0 m, 4.3 min",Pass
+T03,Normal: Roundabout -> Rectorate,"run_all('J02','N13')","BFS: 380 m, 4.8 min (via 814, 815, Parking 1, Parking 2) or 330 m, 4.1 min (via 303, 302, Parking 3, LH3), tie on walkways. Dijkstra/A*: 330 m, 4.1 min","BFS: Roundabout -> 814 -> 815 -> Parking 1 -> Parking 2 -> Rectorate, 380.0 m, 4.8 min. Dijkstra and A*: Roundabout -> 303 -> 302 -> Parking 3 -> LH3 -> Rectorate, 330.0 m, 4.1 min",Pass
+T04,Normal: Main entrance -> 1001,"run_all('J01','N10')","All three: Main entrance -> 815 -> 814 -> Roundabout -> 702 -> 817 -> 1001, 480 m, 6.0 min","BFS, Dijkstra and A*: Main entrance -> 815 -> 814 -> Roundabout -> 702 -> 817 -> 1001, 480.0 m, 6.0 min",Pass
+T05,Normal: 801 -> 302,"run_all('N02','N12')","All three: 801 -> Restaurant -> 302, 40 m, 0.5 min","BFS, Dijkstra and A*: 801 Student Services -> Restaurant -> 302, 40.0 m, 0.5 min",Pass
+T06,Invalid: unknown ID,"run_all('N99','N05')",Error: location not found.,Error: location not found.,Pass
+T07,Exceptional: same start and destination,"run_all('J01','J01')",You are already there (0 m).,You are already there (0 m).,Pass
+T08,Exceptional: unreachable location,"Test-only isolated node X99; run_all('J01','X99')",No route found.,No route found.,Pass
